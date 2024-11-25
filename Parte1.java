@@ -1,5 +1,6 @@
 import java.math.BigInteger;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 public class Parte1 {
 
@@ -14,15 +15,15 @@ public class Parte1 {
     static final String B_HEX = "00A1B2595D943A88BF37E60F1BC2623EDF1E3C1A821977F84F1FF6960D3481BFB17749527879A31FD05758270135CD985900B073127E9792F2D52BE7DA183E6765D810B47BF5D4E52FF88E744AD0530294C52B406040ED73430496F70C49E2E634984F5430CF8CC4734B8A624895A88E8605212A95C93C4EE49E8A8087DABDACF2";
 
     // Variáveis de controle
-    static final int RADIX = 16;
     static final String NOME_DO_ALGORITMO = "SHA-256";
+    static final int TAMANHO_DA_SENHA = 16;
     
     public static void main(String[] args) {
         // Convertendo os valores hexadecimais para BigInteger
-        BigInteger g = converterParaBigInteger(G_HEX);
-        BigInteger p = converterParaBigInteger(P_HEX);
-        BigInteger a = converterParaBigInteger(A_HEX);
-        BigInteger B = converterParaBigInteger(B_HEX);
+        BigInteger g = Utils.converterParaBigInteger(G_HEX);
+        BigInteger p = Utils.converterParaBigInteger(P_HEX);
+        BigInteger a = Utils.converterParaBigInteger(A_HEX);
+        BigInteger B = Utils.converterParaBigInteger(B_HEX);
 
         // Calculando A = g^a mod p
         BigInteger A = calcularChave(g, a, p);
@@ -31,12 +32,12 @@ public class Parte1 {
         BigInteger V = calcularChave(B, a, p);
 
         // Calculando S = SHA256(V)
-        BigInteger S = calcularSenha(V);
+        byte[] S = calcularSenha(V);
 
         // Resultado em hexadecimal
-        String AHexResultado = converterParaString(A);
-        String VHexResultado = converterParaString(V);
-        String SHexResultado = converterParaString(S);
+        String AHexResultado = Utils.converterParaString(A);
+        String VHexResultado = Utils.converterParaString(V);
+        String SHexResultado = Utils.converterParaString(S);
         System.out.println("O valor de A em hexadecimal é: " + AHexResultado);
         System.out.println("O valor de V em hexadecimal é: " + VHexResultado);
         System.out.println("O valor de S em hexadecimal é: " + SHexResultado);
@@ -46,31 +47,19 @@ public class Parte1 {
         return base.modPow(a, p);
     }
 
-    public static BigInteger calcularSenha(BigInteger V) {
+    public static byte[] calcularSenha(BigInteger V) {
         try {
-            byte[] VEmBytes = V.toByteArray();
-        
-            MessageDigest messageDigest = MessageDigest.getInstance(NOME_DO_ALGORITMO);
-            messageDigest.update(VEmBytes);
-            byte[] SEmBytes = messageDigest.digest();
+            MessageDigest md256 = MessageDigest.getInstance(NOME_DO_ALGORITMO);
+            byte[] senha = new byte[TAMANHO_DA_SENHA];
 
-            BigInteger S = converterParaBigInteger(SEmBytes);
+            md256.update(V.toByteArray());
+            byte[] senhaSemPadding = md256.digest();
 
-            return S;
-        } catch (Exception e) {
-            return new BigInteger("1");
+            System.arraycopy(senhaSemPadding, senhaSemPadding.length - TAMANHO_DA_SENHA, senha, 0 , TAMANHO_DA_SENHA);
+
+            return senha;        
+        } catch (NoSuchAlgorithmException e) {
+            return null;
         }
-    }
-
-    public static BigInteger converterParaBigInteger(String numeroEmHex) {
-        return new BigInteger(numeroEmHex, RADIX);
-    }
-
-    public static BigInteger converterParaBigInteger(byte[] numeroEmHex) {
-        return new BigInteger(numeroEmHex);
-    }
-
-    public static String converterParaString(BigInteger numero) {
-        return numero.toString(RADIX);
     }
 }
